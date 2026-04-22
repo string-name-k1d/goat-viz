@@ -8,7 +8,6 @@ const PALETTE_RADAR = ['#F59E0B', '#14B8A6', '#8B5CF6'];
 const CATEGORIES = [
   { key: 'dominance',     label: 'Dominance' },
   { key: 'longevity',     label: 'Longevity' },
-  { key: 'accolades',     label: 'Accolades' },
   { key: 'eraDifficulty', label: 'Era' },
 ];
 
