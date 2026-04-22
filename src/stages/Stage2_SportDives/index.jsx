@@ -11,7 +11,16 @@ export default function Stage2_SportDives({
   selectedAthletes, setSelectedAthletes,
   weights, setWeights, athletes, attributeMeta, sportScores,
 }) {
-  const sport = SPORTS.find(s => s.key === currentSport);
+  const sport = SPORTS.find(s => s.key === currentSport) || SPORTS[0];
+  const activeSportKey = sport.key;
+  const safeAthletesBySport = athletes || {};
+  const safeAttributeMetaBySport = attributeMeta || {};
+  const safeSportScoresBySport = sportScores || {};
+  const safeSelectedAthletesBySport = selectedAthletes || {};
+
+  const handleSportTabClick = (sportKey) => {
+    if (SPORTS.some(s => s.key === sportKey)) setCurrentSport(sportKey);
+  };
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 60 }}>
@@ -23,13 +32,14 @@ export default function Stage2_SportDives({
         {SPORTS.map(s => (
           <button
             key={s.key}
-            onClick={() => setCurrentSport(s.key)}
+            onClick={() => handleSportTabClick(s.key)}
+            type="button"
             style={{
               padding: '10px 24px', borderRadius: '8px 8px 0 0',
               border: 'none',
-              backgroundColor: currentSport === s.key ? '#1a1a1a' : 'transparent',
-              borderTop: currentSport === s.key ? `2px solid ${s.color}` : '2px solid transparent',
-              color: currentSport === s.key ? s.color : '#6b7280',
+              backgroundColor: activeSportKey === s.key ? '#1a1a1a' : 'transparent',
+              borderTop: activeSportKey === s.key ? `2px solid ${s.color}` : '2px solid transparent',
+              color: activeSportKey === s.key ? s.color : '#6b7280',
               fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: 14,
               cursor: 'pointer', transition: 'all 200ms ease',
             }}
@@ -40,13 +50,13 @@ export default function Stage2_SportDives({
       </div>
 
       <SportDive
-        sportKey={currentSport}
+        sportKey={activeSportKey}
         sport={sport}
-        athletes={athletes[currentSport]}
-        attributeMeta={attributeMeta[currentSport]}
-        sportScores={sportScores[currentSport] || {}}
-        selectedAthletes={selectedAthletes[currentSport]}
-        setSelectedAthletes={(ids) => setSelectedAthletes({ ...selectedAthletes, [currentSport]: ids })}
+        athletes={safeAthletesBySport[activeSportKey] || []}
+        attributeMeta={safeAttributeMetaBySport[activeSportKey] || []}
+        sportScores={safeSportScoresBySport[activeSportKey] || {}}
+        selectedAthletes={safeSelectedAthletesBySport[activeSportKey] || []}
+        setSelectedAthletes={(ids) => setSelectedAthletes(prev => ({ ...prev, [activeSportKey]: ids }))}
         weights={weights}
         setWeights={setWeights}
         goTo={goTo}

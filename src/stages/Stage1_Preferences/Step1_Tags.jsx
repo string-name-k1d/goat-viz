@@ -4,16 +4,12 @@ const ALL_TAGS = [
   'Mental Strength', 'Innovation', 'Impact on the Sport', 'Clutch Performance',
 ];
 
-const MAX_TAGS = 5;
-
 export default function Step1_Tags({ selectedTags, setSelectedTags, onNext }) {
   function toggleTag(tag) {
     if (selectedTags.includes(tag)) {
       setSelectedTags(selectedTags.filter(t => t !== tag));
     } else {
-      if (selectedTags.length < MAX_TAGS) {
-        setSelectedTags([...selectedTags, tag]);
-      }
+      setSelectedTags([...selectedTags, tag]);
     }
   }
 
@@ -26,10 +22,10 @@ export default function Step1_Tags({ selectedTags, setSelectedTags, onNext }) {
         What makes a sporting legend?
       </h2>
       <p style={{ color: '#9ca3af', marginBottom: 8, fontSize: 15 }}>
-        Pick up to 5 words that matter most to you
+        Select all keywords that matter most to you
       </p>
       <p style={{ color: '#6b7280', marginBottom: 32, fontSize: 13 }}>
-        {selectedTags.length} / {MAX_TAGS} selected
+        {selectedTags.length} selected
       </p>
 
       <div style={{
@@ -38,20 +34,18 @@ export default function Step1_Tags({ selectedTags, setSelectedTags, onNext }) {
       }}>
         {ALL_TAGS.map(tag => {
           const selected = selectedTags.includes(tag);
-          const disabled = !selected && selectedTags.length >= MAX_TAGS;
           return (
             <button
               key={tag}
               onClick={() => toggleTag(tag)}
-              disabled={disabled}
               style={{
                 padding: '10px 14px',
                 borderRadius: 50,
                 border: selected ? '2px solid #F59E0B' : '2px solid #2a2a2a',
                 backgroundColor: selected ? 'rgba(245,158,11,0.15)' : '#1a1a1a',
-                color: selected ? '#F59E0B' : disabled ? '#4b5563' : '#9ca3af',
+                color: selected ? '#F59E0B' : '#9ca3af',
                 fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: selected ? 600 : 400,
-                cursor: disabled ? 'not-allowed' : 'pointer',
+                cursor: 'pointer',
                 transition: 'all 200ms ease',
                 transform: selected ? 'scale(1.03)' : 'scale(1)',
               }}

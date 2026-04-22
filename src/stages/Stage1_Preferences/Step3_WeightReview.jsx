@@ -65,7 +65,7 @@ function MiniPreview({ athletes, attributeMeta, weights }) {
 
 export default function Step3_WeightReview({
   weights, setWeights, selectedTags,
-  athletes, attributeMeta, sportScores,
+  athletes, attributeMeta,
   onConfirm, onBack,
 }) {
   const [localWeights, setLocalWeights] = useState({ ...weights });

@@ -7,15 +7,21 @@ export default function SportDive({
   selectedAthletes, setSelectedAthletes,
   weights, setWeights, goTo,
 }) {
-  const topAthlete = athletes
-    .map(a => ({ ...a, score: sportScores[a.id]?.score || 0 }))
+  const safeAthletes = athletes || [];
+  const safeAttributeMeta = attributeMeta || [];
+  const safeSportScores = sportScores || {};
+  const safeSelectedAthletes = selectedAthletes || [];
+  const safeSport = sport || { label: 'Sport', color: '#F59E0B', tagline: '' };
+
+  const topAthlete = safeAthletes
+    .map(a => ({ ...a, score: safeSportScores[a.id]?.score || 0 }))
     .sort((a, b) => b.score - a.score)[0];
 
   const top2Reasons = topAthlete
-    ? Object.entries(sportScores[topAthlete.id]?.breakdown || {})
+    ? Object.entries(safeSportScores[topAthlete.id]?.breakdown || {})
         .sort((a, b) => b[1] - a[1])
         .slice(0, 2)
-        .map(([k]) => ({ dominance: 'Dominance', longevity: 'Longevity', accolades: 'Accolades', eraDifficulty: 'Era Difficulty' }[k]))
+        .map(([k]) => ({ dominance: 'Dominance', longevity: 'Longevity', accolades: 'Accolades', eraDifficulty: 'Era Difficulty' }[k] || k))
     : [];
 
   const initials = (name) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -28,22 +34,22 @@ export default function SportDive({
           fontFamily: 'Playfair Display, serif',
           fontSize: 'clamp(1.8rem, 4vw, 3rem)',
           fontWeight: 900, margin: '0 0 8px',
-          color: sport.color,
+          color: safeSport.color,
         }}>
-          {sport.label}
+          {safeSport.label}
         </h2>
-        <p style={{ color: '#6b7280', fontSize: 15, fontStyle: 'italic' }}>{sport.tagline}</p>
+        <p style={{ color: '#6b7280', fontSize: 15, fontStyle: 'italic' }}>{safeSport.tagline}</p>
       </div>
 
       {/* Section: Radar */}
       <section style={{ marginBottom: 52 }}>
-        <SectionHeading number="01" title="Athlete Comparison" subtitle="Select up to 3 athletes to compare across all dimensions" />
+        <SectionHeading number="01" title="Athlete Comparison" subtitle="Select athletes to compare across all dimensions" />
         <RadarView
-          athletes={athletes}
-          attributeMeta={attributeMeta}
-          selectedAthletes={selectedAthletes}
+          athletes={safeAthletes}
+          attributeMeta={safeAttributeMeta}
+          selectedAthletes={safeSelectedAthletes}
           setSelectedAthletes={setSelectedAthletes}
-          color={sport.color}
+          color={safeSport.color}
         />
       </section>
 
@@ -51,13 +57,13 @@ export default function SportDive({
       <section style={{ marginBottom: 52 }}>
         <SectionHeading number="02" title="GOAT Rankings" subtitle="All athletes ranked by your current weights" />
         <RankedBarChart
-          athletes={athletes}
-          attributeMeta={attributeMeta}
-          sportScores={sportScores}
-          selectedAthletes={selectedAthletes}
+          athletes={safeAthletes}
+          attributeMeta={safeAttributeMeta}
+          sportScores={safeSportScores}
+          selectedAthletes={safeSelectedAthletes}
           weights={weights}
           setWeights={setWeights}
-          color={sport.color}
+          color={safeSport.color}
         />
       </section>
 
@@ -65,9 +71,9 @@ export default function SportDive({
       <section style={{ marginBottom: 52 }}>
         <SectionHeading number="03" title="Career Timeline" subtitle="Peak performance and longevity over the years" />
         <CareerTimeline
-          athletes={athletes}
-          selectedAthletes={selectedAthletes}
-          color={sport.color}
+          athletes={safeAthletes}
+          selectedAthletes={safeSelectedAthletes}
+          color={safeSport.color}
           sportKey={sportKey}
         />
       </section>
@@ -76,16 +82,16 @@ export default function SportDive({
       {topAthlete && (
         <div style={{
           backgroundColor: '#1a1a1a', borderRadius: 20, padding: 32,
-          border: `1px solid ${sport.color}33`,
-          boxShadow: `0 0 40px ${sport.color}15`,
+          border: `1px solid ${safeSport.color}33`,
+          boxShadow: `0 0 40px ${safeSport.color}15`,
           textAlign: 'center',
         }}>
           <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
-            Based on your values, the {sport.label} GOAT is...
+            Based on your values, the {safeSport.label} GOAT is...
           </p>
           <div style={{
             width: 72, height: 72, borderRadius: '50%', margin: '0 auto 16px',
-            background: `linear-gradient(135deg, ${sport.color}, ${sport.color}88)`,
+            background: `linear-gradient(135deg, ${safeSport.color}, ${safeSport.color}88)`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 700, color: '#0f0f0f',
           }}>
@@ -93,7 +99,7 @@ export default function SportDive({
           </div>
           <h3 style={{
             fontFamily: 'Playfair Display, serif', fontSize: 28, fontWeight: 900,
-            color: sport.color, margin: '0 0 8px',
+            color: safeSport.color, margin: '0 0 8px',
           }}>
             {topAthlete.name}
           </h3>
@@ -105,12 +111,12 @@ export default function SportDive({
             onClick={() => goTo(3)}
             style={{
               padding: '12px 32px', background: 'none',
-              border: `2px solid ${sport.color}`, borderRadius: 50,
-              color: sport.color, fontFamily: 'DM Sans, sans-serif',
+              border: `2px solid ${safeSport.color}`, borderRadius: 50,
+              color: safeSport.color, fontFamily: 'DM Sans, sans-serif',
               fontWeight: 600, fontSize: 14, cursor: 'pointer',
               transition: 'all 200ms ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.backgroundColor = `${sport.color}22`; }}
+            onMouseEnter={e => { e.currentTarget.style.backgroundColor = `${safeSport.color}22`; }}
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
             See how the scores compare →

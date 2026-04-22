@@ -1,16 +1,17 @@
 export const tagWeights = {
-  'Consistency':          { longevity: 0.1,  dominance: 0.05 },
-  'Peak Dominance':       { dominance: 0.15 },
-  'Titles & Trophies':    { accolades: 0.15 },
-  'Longevity':            { longevity: 0.15 },
-  'Rivalry':              { eraDifficulty: 0.1, dominance: 0.05 },
-  'Beating the Odds':     { eraDifficulty: 0.15 },
-  'Records':              { dominance: 0.1,  accolades: 0.05 },
-  'Era Difficulty':       { eraDifficulty: 0.15 },
-  'Mental Strength':      { dominance: 0.08, eraDifficulty: 0.07 },
-  'Innovation':           { eraDifficulty: 0.1 },
-  'Impact on the Sport':  { accolades: 0.1,  longevity: 0.05 },
-  'Clutch Performance':   { dominance: 0.1,  accolades: 0.05 },
+  // Keep mappings mostly one-to-one so categories stay easier to explain.
+  'Consistency':          { longevity: 0.16 },
+  'Peak Dominance':       { dominance: 0.18 },
+  'Titles & Trophies':    { accolades: 0.18 },
+  'Longevity':            { longevity: 0.18 },
+  'Rivalry':              { eraDifficulty: 0.16 },
+  'Beating the Odds':     { eraDifficulty: 0.18 },
+  'Records':              { dominance: 0.16 },
+  'Era Difficulty':       { eraDifficulty: 0.18 },
+  'Mental Strength':      { dominance: 0.14 },
+  'Innovation':           { eraDifficulty: 0.14 },
+  'Impact on the Sport':  { accolades: 0.14 },
+  'Clutch Performance':   { dominance: 0.16 },
 };
 
 export const questionPool = [
@@ -71,7 +72,7 @@ export function inferWeights(selectedTags, pairwiseAnswers) {
     const tw = tagWeights[tag] || {};
     Object.entries(tw).forEach(([k, v]) => { deltas[k] += v; });
   });
-  pairwiseAnswers.forEach(({ questionId, choice }) => {
+  (pairwiseAnswers || []).forEach(({ questionId, choice }) => {
     const q = questionPool.find(q => q.id === questionId);
     if (!q) return;
     const maps = q.maps[choice] || {};

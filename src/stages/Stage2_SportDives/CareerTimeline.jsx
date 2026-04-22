@@ -2,6 +2,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   ReferenceArea, ResponsiveContainer, ReferenceDot,
 } from 'recharts';
+import { useState } from 'react';
 
 const PALETTE = ['#F59E0B', '#14B8A6', '#8B5CF6', '#EF4444', '#3B82F6', '#10B981'];
 
@@ -24,11 +25,11 @@ const CustomTooltip = ({ active, payload, label, athletes }) => {
   return (
     <div style={{
       backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a',
-      borderRadius: 8, padding: '10px 14px', fontSize: 12,
+      borderRadius: 8, padding: '12px 16px', fontSize: 14,
     }}>
-      <p style={{ color: '#9ca3af', margin: '0 0 6px', fontWeight: 600 }}>{label}</p>
+      <p style={{ color: '#d1d5db', margin: '0 0 6px', fontWeight: 700 }}>{label}</p>
       {payload.map(p => {
-        const a = athletes.find(at => at.id === p.dataKey);
+        const a = (athletes || []).find(at => at.id === p.dataKey);
         return (
           <p key={p.dataKey} style={{ color: p.color, margin: '2px 0' }}>
             {a?.name}: <strong>{p.value}</strong>
@@ -40,7 +41,11 @@ const CustomTooltip = ({ active, payload, label, athletes }) => {
 };
 
 export default function CareerTimeline({ athletes, selectedAthletes, color, sportKey }) {
-  const selected = athletes.filter(a => selectedAthletes.includes(a.id));
+  const [selectedAward, setSelectedAward] = useState(null);
+  const [hoveredAwardKey, setHoveredAwardKey] = useState(null);
+  const safeAthletes = athletes || [];
+  const safeSelectedAthletes = selectedAthletes || [];
+  const selected = safeAthletes.filter(a => safeSelectedAthletes.includes(a.id));
   if (!selected.length) {
     return (
       <div style={{
@@ -52,16 +57,17 @@ export default function CareerTimeline({ athletes, selectedAthletes, color, spor
     );
   }
 
-  // Merge all years across selected athletes
-  const allYears = new Set();
-  selected.forEach(a => a.timeline?.forEach(d => allYears.add(d.year)));
-  const sortedYears = [...allYears].sort((a, b) => a - b);
+  // Build a continuous year axis so era gaps are visible.
+  const allYears = selected.flatMap(a => (a.timeline || []).map(d => d.year));
+  const minYear = Math.min(...allYears);
+  const maxYear = Math.max(...allYears);
+  const sortedYears = Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i);
 
   const chartData = sortedYears.map(year => {
     const point = { year };
     selected.forEach(a => {
       const match = a.timeline?.find(d => d.year === year);
-      if (match) point[a.id] = match.value;
+      point[a.id] = match ? match.value : null;
     });
     return point;
   });
@@ -71,8 +77,17 @@ export default function CareerTimeline({ athletes, selectedAthletes, color, spor
   selected.forEach((a, i) => {
     (a.awards || []).forEach(award => {
       const dp = chartData.find(d => d.year === award.year);
-      if (dp && dp[a.id] !== undefined) {
-        awardDots.push({ athleteId: a.id, year: award.year, value: dp[a.id], label: award.label, color: PALETTE[i] });
+      if (dp && dp[a.id] != null) {
+        const awardKey = `${a.id}-${award.year}-${award.label}`;
+        awardDots.push({
+          awardKey,
+          athleteId: a.id,
+          athleteName: a.name,
+          year: award.year,
+          value: dp[a.id],
+          label: award.label,
+          color: PALETTE[i % PALETTE.length],
+        });
       }
     });
   });
@@ -84,23 +99,29 @@ export default function CareerTimeline({ athletes, selectedAthletes, color, spor
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
         {selected.map((a, i) => (
           <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 12, height: 3, backgroundColor: PALETTE[i], borderRadius: 2 }} />
-            <span style={{ fontSize: 12, color: '#9ca3af' }}>{a.name}</span>
+            <div style={{ width: 16, height: 4, backgroundColor: PALETTE[i % PALETTE.length], borderRadius: 2 }} />
+            <span style={{ fontSize: 14, color: '#d1d5db', fontWeight: 600 }}>{a.name}</span>
           </div>
         ))}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 12, height: 8, backgroundColor: `${color}22`, border: `1px solid ${color}44`, borderRadius: 2 }} />
-          <span style={{ fontSize: 12, color: '#6b7280' }}>Prime years (top athlete)</span>
+          <span style={{ fontSize: 13, color: '#9ca3af' }}>Prime years (top athlete)</span>
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={340}>
         <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 16 }}>
-          <CartesianGrid stroke="#2a2a2a" strokeDasharray="3 3" />
-          <XAxis dataKey="year" tick={{ fill: '#6b7280', fontSize: 10 }} />
+          <CartesianGrid stroke="#3a3a3a" strokeDasharray="3 3" />
+          <XAxis
+            dataKey="year"
+            type="number"
+            domain={[minYear, maxYear]}
+            tick={{ fill: '#9ca3af', fontSize: 12 }}
+            tickFormatter={(year) => `${year}`}
+          />
           <YAxis
-            label={{ value: Y_LABELS[sportKey] || 'Value', angle: -90, position: 'insideLeft', fill: '#4b5563', fontSize: 10 }}
-            tick={{ fill: '#6b7280', fontSize: 10 }}
+            label={{ value: Y_LABELS[sportKey] || 'Value', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 12 }}
+            tick={{ fill: '#9ca3af', fontSize: 12 }}
           />
           <Tooltip content={<CustomTooltip athletes={athletes} />} />
 
@@ -118,11 +139,10 @@ export default function CareerTimeline({ athletes, selectedAthletes, color, spor
               key={a.id}
               type="monotone"
               dataKey={a.id}
-              stroke={PALETTE[i]}
-              strokeWidth={2}
+              stroke={PALETTE[i % PALETTE.length]}
+              strokeWidth={3}
               dot={false}
-              activeDot={{ r: 5, strokeWidth: 0 }}
-              connectNulls
+              activeDot={{ r: 6, strokeWidth: 0 }}
             />
           ))}
 
@@ -130,14 +150,46 @@ export default function CareerTimeline({ athletes, selectedAthletes, color, spor
             <ReferenceDot
               key={i}
               x={d.year} y={d.value}
-              r={5} fill={d.color} stroke="#0f0f0f" strokeWidth={2}
-              label={{ value: '★', fill: d.color, fontSize: 12, position: 'top' }}
+              r={0}
+              shape={(props = {}) => {
+                const { cx, cy } = props;
+                if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+                const isHovered = hoveredAwardKey === d.awardKey;
+                const isSelected = selectedAward?.awardKey === d.awardKey;
+                const scale = isHovered || isSelected ? 1.2 : 1;
+                return (
+                  <g
+                    transform={`translate(${cx}, ${cy}) scale(${scale})`}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setSelectedAward(d)}
+                    onMouseEnter={() => setHoveredAwardKey(d.awardKey)}
+                    onMouseLeave={() => setHoveredAwardKey(null)}
+                  >
+                    <circle r={12} fill="transparent" />
+                    <text
+                      x={0}
+                      y={-8}
+                      textAnchor="middle"
+                      fill={d.color}
+                      fontSize={isHovered || isSelected ? 16 : 14}
+                      fontWeight={700}
+                    >
+                      ★
+                    </text>
+                  </g>
+                );
+              }}
             />
           ))}
         </LineChart>
       </ResponsiveContainer>
-      <p style={{ color: '#4b5563', fontSize: 11, marginTop: 8, textAlign: 'center' }}>
-        ★ marks major awards / titles
+      {selectedAward && (
+        <p style={{ color: '#d1d5db', fontSize: 13, marginTop: 10, textAlign: 'center' }}>
+          <strong>{selectedAward.athleteName}</strong> ({selectedAward.year}): {selectedAward.label}
+        </p>
+      )}
+      <p style={{ color: '#9ca3af', fontSize: 13, marginTop: 10, textAlign: 'center' }}>
+        ★ marks major awards / titles (click a star to see details). Breaks in lines indicate missing year data.
       </p>
     </div>
   );

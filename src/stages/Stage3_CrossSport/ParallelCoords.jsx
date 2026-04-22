@@ -15,6 +15,16 @@ export default function ParallelCoords({ athletes, highlightedId, setHighlighted
   const containerRef = useRef(null);
   const [width, setWidth] = useState(700);
   const [brushFilters, setBrushFilters] = useState({});
+  const [axisOrder, setAxisOrder] = useState(AXES.map(a => a.key));
+  const [activeSports, setActiveSports] = useState({
+    football: true,
+    chess: true,
+    boxing: true,
+  });
+  const [hoveredAthlete, setHoveredAthlete] = useState(null);
+
+  const axesInOrder = axisOrder.map(key => AXES.find(a => a.key === key)).filter(Boolean);
+  const visibleAthletes = (athletes || []).filter(a => activeSports[a.sport]);
 
   useEffect(() => {
     const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width));
@@ -23,7 +33,7 @@ export default function ParallelCoords({ athletes, highlightedId, setHighlighted
   }, []);
 
   useEffect(() => {
-    if (!svgRef.current || !athletes.length) return;
+    if (!svgRef.current || !visibleAthletes.length || !axesInOrder.length) return;
 
     const height = 360;
     const margin = { top: 48, right: 32, bottom: 20, left: 32 };
@@ -36,20 +46,20 @@ export default function ParallelCoords({ athletes, highlightedId, setHighlighted
 
     // Scale per axis
     const axisScale = {};
-    AXES.forEach(axis => {
+    axesInOrder.forEach(axis => {
       axisScale[axis.key] = d3.scaleLinear()
         .domain([0, 1])
         .range([H, 0]);
     });
 
     const xScale = d3.scalePoint()
-      .domain(AXES.map(a => a.key))
+      .domain(axesInOrder.map(a => a.key))
       .range([0, W])
       .padding(0.1);
 
     // Line function
     function line(d) {
-      return d3.line()(AXES.map(axis => [xScale(axis.key), axisScale[axis.key](d.breakdown?.[axis.key] || 0)]));
+      return d3.line()(axesInOrder.map(axis => [xScale(axis.key), axisScale[axis.key](d.breakdown?.[axis.key] || 0)]));
     }
 
     // Check if athlete passes all brush filters
@@ -63,7 +73,7 @@ export default function ParallelCoords({ athletes, highlightedId, setHighlighted
     // Draw paths
     const paths = g.append('g').attr('class', 'paths');
     paths.selectAll('path')
-      .data(athletes)
+      .data(visibleAthletes)
       .enter().append('path')
       .attr('d', line)
       .attr('fill', 'none')
@@ -77,14 +87,16 @@ export default function ParallelCoords({ athletes, highlightedId, setHighlighted
       .style('cursor', 'pointer')
       .on('mouseenter', function (_, d) {
         setHighlightedId(d.id);
+        setHoveredAthlete(d);
         d3.select(this).raise().attr('stroke-opacity', 1).attr('stroke-width', 2.5);
       })
-      .on('mouseleave', function (_, d) {
+      .on('mouseleave', function () {
         setHighlightedId(null);
+        setHoveredAthlete(null);
       });
 
     // Draw axes
-    AXES.forEach(axis => {
+    axesInOrder.forEach(axis => {
       const axisG = g.append('g')
         .attr('transform', `translate(${xScale(axis.key)},0)`);
 
@@ -121,35 +133,114 @@ export default function ParallelCoords({ athletes, highlightedId, setHighlighted
         .style('stroke', '#F59E0B').style('stroke-width', '0.5');
     });
 
-  }, [athletes, highlightedId, brushFilters, width]);
+  }, [visibleAthletes, axesInOrder, highlightedId, brushFilters, width, setHighlightedId]);
 
   const hasBrush = Object.keys(brushFilters).length > 0;
+  const hasSportFilter = Object.values(activeSports).some(v => !v);
+
+  function moveAxis(key, direction) {
+    setAxisOrder(prev => {
+      const idx = prev.indexOf(key);
+      if (idx < 0) return prev;
+      const target = direction === 'left' ? idx - 1 : idx + 1;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
+  }
+
+  function toggleSport(sport) {
+    setActiveSports(prev => {
+      const next = { ...prev, [sport]: !prev[sport] };
+      // Prevent hiding all sports.
+      if (!Object.values(next).some(Boolean)) return prev;
+      return next;
+    });
+  }
 
   return (
     <div ref={containerRef} style={{ backgroundColor: '#1a1a1a', borderRadius: 16, border: '1px solid #2a2a2a', padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ display: 'flex', gap: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {Object.entries(SPORT_COLORS).map(([sport, col]) => (
-            <div key={sport} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div style={{ width: 20, height: 3, backgroundColor: col, borderRadius: 1 }} />
-              <span style={{ fontSize: 12, color: '#9ca3af', textTransform: 'capitalize' }}>{sport}</span>
-            </div>
+            <button
+              key={sport}
+              type="button"
+              onClick={() => toggleSport(sport)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'none',
+                border: `1px solid ${activeSports[sport] ? `${col}99` : '#4b5563'}`,
+                borderRadius: 999, padding: '4px 10px',
+                color: activeSports[sport] ? '#d1d5db' : '#6b7280',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ width: 20, height: 3, backgroundColor: col, borderRadius: 1, opacity: activeSports[sport] ? 1 : 0.4 }} />
+              <span style={{ fontSize: 12, textTransform: 'capitalize' }}>{sport}</span>
+            </button>
           ))}
         </div>
-        {hasBrush && (
-          <button
-            onClick={() => setBrushFilters({})}
-            style={{
-              background: 'none', border: '1px solid #4b5563', borderRadius: 6,
-              color: '#9ca3af', padding: '4px 10px', fontSize: 11, cursor: 'pointer',
-            }}
-          >
-            Clear filters
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {hoveredAthlete && (
+            <div style={{
+              fontSize: 12, color: '#d1d5db', border: '1px solid #4b5563',
+              borderRadius: 6, padding: '4px 8px',
+            }}>
+              {hoveredAthlete.name} ({hoveredAthlete.sport})
+            </div>
+          )}
+          {(hasBrush || hasSportFilter) && (
+            <button
+              onClick={() => {
+                setBrushFilters({});
+                setActiveSports({ football: true, chess: true, boxing: true });
+              }}
+              style={{
+                background: 'none', border: '1px solid #4b5563', borderRadius: 6,
+                color: '#9ca3af', padding: '4px 10px', fontSize: 11, cursor: 'pointer',
+              }}
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
       </div>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+        {axesInOrder.map((axis, idx) => (
+          <div key={axis.key} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 11, color: '#9ca3af' }}>{axis.label}</span>
+            <button
+              type="button"
+              onClick={() => moveAxis(axis.key, 'left')}
+              disabled={idx === 0}
+              style={{
+                width: 22, height: 20, borderRadius: 4, border: '1px solid #4b5563',
+                background: 'none', color: idx === 0 ? '#4b5563' : '#9ca3af', cursor: idx === 0 ? 'default' : 'pointer',
+              }}
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              onClick={() => moveAxis(axis.key, 'right')}
+              disabled={idx === axesInOrder.length - 1}
+              style={{
+                width: 22, height: 20, borderRadius: 4, border: '1px solid #4b5563',
+                background: 'none', color: idx === axesInOrder.length - 1 ? '#4b5563' : '#9ca3af',
+                cursor: idx === axesInOrder.length - 1 ? 'default' : 'pointer',
+              }}
+            >
+              →
+            </button>
+          </div>
+        ))}
+      </div>
+
       <p style={{ color: '#4b5563', fontSize: 11, marginBottom: 8 }}>
-        Drag on any axis to filter athletes · Hover a line to highlight
+        Drag on any axis to filter · Hover a line to see athlete · Use chips to filter sports · Reorder axes with arrows
       </p>
       <svg ref={svgRef} style={{ overflow: 'visible' }} />
     </div>

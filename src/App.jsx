@@ -21,7 +21,6 @@ export default function App() {
   const [currentStage, setCurrentStage] = useState(0);
   const [currentSport, setCurrentSport] = useState('football');
   const [selectedTags, setSelectedTags] = useState([]);
-  const [pairwiseAnswers, setPairwiseAnswers] = useState([]);
   const [weights, setWeights] = useState(initialWeights);
   const [selectedAthletes, setSelectedAthletes] = useState({
     football: [normalizedFootball[0].id, normalizedFootball[1].id],
@@ -49,7 +48,6 @@ export default function App() {
     currentStage, goTo,
     currentSport, setCurrentSport,
     selectedTags, setSelectedTags,
-    pairwiseAnswers, setPairwiseAnswers,
     weights, setWeights,
     selectedAthletes, setSelectedAthletes,
     sportScores, overallScores,

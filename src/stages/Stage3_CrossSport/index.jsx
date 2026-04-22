@@ -44,7 +44,7 @@ export default function Stage3_CrossSport({
       </section>
 
       <section style={{ marginBottom: 52 }}>
-        <SectionHeading number="02" title="Parallel Profiles" subtitle="All 4 dimensions side-by-side — drag an axis to filter" />
+        <SectionHeading number="02" title="Parallel Profiles" subtitle="Hover lines for athlete names, filter by sport, and reorder axes" />
         <ParallelCoords
           athletes={allAthletes}
           highlightedId={highlightedId}

@@ -1,26 +1,19 @@
 import { useState } from 'react';
 import Step1_Tags from './Step1_Tags';
-import Step2_Pairwise from './Step2_Pairwise';
 import Step3_WeightReview from './Step3_WeightReview';
 import { inferWeights } from '../../data/attributeMap';
 
 export default function Stage1_Preferences({
   selectedTags, setSelectedTags,
-  pairwiseAnswers, setPairwiseAnswers,
   weights, setWeights,
-  goTo, athletes, attributeMeta, sportScores,
+  goTo, athletes, attributeMeta,
 }) {
   const [step, setStep] = useState(1);
 
   function handleTagsNext() {
-    setStep(2);
-  }
-
-  function handlePairwiseNext(answers) {
-    setPairwiseAnswers(answers);
-    const inferred = inferWeights(selectedTags, answers);
+    const inferred = inferWeights(selectedTags);
     setWeights(inferred);
-    setStep(3);
+    setStep(2);
   }
 
   function handleWeightConfirm(finalWeights) {
@@ -38,7 +31,7 @@ export default function Stage1_Preferences({
   return (
     <div style={{ minHeight: '100vh', padding: '60px 20px 40px' }}>
       <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 40 }}>
-        {[1, 2, 3].map(n => <div key={n} style={dotStyle(n)} />)}
+        {[1, 2].map(n => <div key={n} style={dotStyle(n)} />)}
       </div>
 
       {step === 1 && (
@@ -49,22 +42,14 @@ export default function Stage1_Preferences({
         />
       )}
       {step === 2 && (
-        <Step2_Pairwise
-          selectedTags={selectedTags}
-          onNext={handlePairwiseNext}
-          onBack={() => setStep(1)}
-        />
-      )}
-      {step === 3 && (
         <Step3_WeightReview
           weights={weights}
           setWeights={setWeights}
           selectedTags={selectedTags}
           athletes={athletes}
           attributeMeta={attributeMeta}
-          sportScores={sportScores}
           onConfirm={handleWeightConfirm}
-          onBack={() => setStep(2)}
+          onBack={() => setStep(1)}
         />
       )}
     </div>
