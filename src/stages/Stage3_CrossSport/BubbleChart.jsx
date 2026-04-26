@@ -9,6 +9,9 @@ const SPORT_COLORS = {
   boxing: "#EF4444",
 };
 
+const DEFAULT_BUBBLE_OPACITY = 0.45;
+const FOCUSED_BUBBLE_OPACITY = 0.92;
+
 export default function BubbleChart({
   athletes,
   selectedTags,
@@ -19,6 +22,7 @@ export default function BubbleChart({
   const svgRef = useRef(null);
   const containerRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
+  const [hoveredId, setHoveredId] = useState(null);
   const [width, setWidth] = useState(700);
 
   const height = 380;
@@ -145,7 +149,7 @@ export default function BubbleChart({
       .attr("cy", (d) => y(yVal(d)))
       .attr("r", 0)
       .attr("fill", (d) => SPORT_COLORS[d.sport])
-      .attr("fill-opacity", 0.7)
+      .attr("fill-opacity", DEFAULT_BUBBLE_OPACITY)
       .attr("stroke", (d) => SPORT_COLORS[d.sport])
       .attr("stroke-width", 0.75)
       .style("cursor", "pointer")
@@ -156,15 +160,16 @@ export default function BubbleChart({
           y: event.clientY - rect.top,
           athlete: d,
         });
-        setHighlightedId(d.id);
+        setHoveredId(d.id);
       })
       .on("mouseleave", () => {
         setTooltip(null);
-        setHighlightedId(null);
+        setHoveredId(null);
       })
-      .on("click", (_, d) =>
-        setHighlightedId((prev) => (prev === d.id ? null : d.id)),
-      );
+      .on("click", (event, d) => {
+        event.stopPropagation();
+        setHighlightedId((prev) => (prev === d.id ? null : d.id));
+      });
 
     const mergedCircles = circlesEnter
       .merge(circles)
@@ -182,18 +187,23 @@ export default function BubbleChart({
   useEffect(() => {
     if (!svgRef.current) return;
     const circles = d3.select(svgRef.current).selectAll("circle.bubble");
+    const activeFocusedId = hoveredId ?? highlightedId;
 
     circles
-      .attr("fill-opacity", (d) => (d.id === highlightedId ? 0.95 : 0.7))
-      .attr("stroke", (d) =>
-        d.id === highlightedId ? "#fff" : SPORT_COLORS[d.sport],
+      .attr("fill-opacity", (d) =>
+        d.id === activeFocusedId
+          ? FOCUSED_BUBBLE_OPACITY
+          : DEFAULT_BUBBLE_OPACITY,
       )
-      .attr("stroke-width", (d) => (d.id === highlightedId ? 2.5 : 0.75));
+      .attr("stroke", (d) =>
+        d.id === activeFocusedId ? "#fff" : SPORT_COLORS[d.sport],
+      )
+      .attr("stroke-width", (d) => (d.id === activeFocusedId ? 2.5 : 0.75));
 
-    if (highlightedId) {
-      circles.filter((d) => d.id === highlightedId).raise();
+    if (activeFocusedId) {
+      circles.filter((d) => d.id === activeFocusedId).raise();
     }
-  }, [highlightedId]);
+  }, [highlightedId, hoveredId]);
 
   return (
     <div

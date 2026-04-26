@@ -11,6 +11,8 @@ import { computeSportScoreList } from "../../utils/scoring";
 import { inferWeights, tagWeights } from "../../data/attributeMap";
 import { TAG_COLORS } from "../../components/KeywordSidePanel";
 
+const SPORTS = ["football", "chess", "boxing"];
+
 function MiniPreview({ athletes, attributeMeta, weights }) {
   const allAthletes = [
     ...athletes.football.slice(0, 3),
@@ -93,8 +95,6 @@ export default function Step3_WeightReview({
   onConfirm,
   onBack,
 }) {
-  const sports = ["football", "chess", "boxing"];
-
   const inferredWeights = useMemo(
     () => inferWeights(selectedTags, [], tagIntensities),
     [selectedTags, tagIntensities],
@@ -103,7 +103,7 @@ export default function Step3_WeightReview({
   const heatMapData = useMemo(() => {
     const allAttributes = Array.from(
       new Map(
-        sports.flatMap((sport) =>
+        SPORTS.flatMap((sport) =>
           (attributeMeta?.[sport] || []).map((attr) => [attr.name, attr]),
         ),
       ).values(),
@@ -111,7 +111,7 @@ export default function Step3_WeightReview({
 
     const overallAttributeAverages = Object.fromEntries(
       allAttributes.map((attr) => {
-        const values = sports.flatMap((sport) =>
+        const values = SPORTS.flatMap((sport) =>
           (athletes?.[sport] || [])
             .map((athlete) => athlete.normalized?.[attr.name])
             .filter((value) => Number.isFinite(value)),
@@ -129,7 +129,7 @@ export default function Step3_WeightReview({
       const row = { key: attr.name, label: attr.label };
       const overallAverage = overallAttributeAverages[attr.name] || 0;
 
-      sports.forEach((sport) => {
+      SPORTS.forEach((sport) => {
         const sportAthletes = athletes?.[sport] || [];
         const values = sportAthletes
           .map((athlete) => athlete.normalized?.[attr.name])
@@ -139,9 +139,10 @@ export default function Step3_WeightReview({
           ? values.reduce((sum, value) => sum + value, 0) / values.length
           : 0;
 
-        row[sport] = overallAverage > 0
-          ? (sportAverage - overallAverage) / overallAverage
-          : 0;
+        row[sport] =
+          overallAverage > 0
+            ? (sportAverage - overallAverage) / overallAverage
+            : 0;
       });
 
       return row;
@@ -393,18 +394,47 @@ export default function Step3_WeightReview({
           marginBottom: 20,
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+            marginBottom: 16,
+          }}
+        >
           <div>
-            <p style={{ color: "#e5e5e5", fontSize: 14, fontWeight: 800, margin: 0 }}>
+            <p
+              style={{
+                color: "#e5e5e5",
+                fontSize: 14,
+                fontWeight: 800,
+                margin: 0,
+              }}
+            >
               Attribute heat map
             </p>
             <p style={{ color: "#6b7280", fontSize: 12, margin: "4px 0 0" }}>
               Signed deviation from the dataset-wide average for each attribute.
             </p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
             <span style={{ color: "#6b7280", fontSize: 11 }}>-</span>
-            <div style={{ width: 140, height: 10, borderRadius: 999, background: "linear-gradient(90deg, #ef4444, #171717, #F59E0B)" }} />
+            <div
+              style={{
+                width: 140,
+                height: 10,
+                borderRadius: 999,
+                background: "linear-gradient(90deg, #ef4444, #171717, #22c55e)",
+              }}
+            />
             <span style={{ color: "#6b7280", fontSize: 11 }}>+</span>
           </div>
         </div>
@@ -413,18 +443,32 @@ export default function Step3_WeightReview({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "minmax(180px, 1.3fr) repeat(3, minmax(110px, 1fr))",
+              gridTemplateColumns:
+                "minmax(180px, 1.3fr) repeat(3, minmax(110px, 1fr))",
               gap: 8,
               minWidth: 520,
             }}
           >
-            <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 800, padding: "0 2px" }}>
+            <div
+              style={{
+                color: "#9ca3af",
+                fontSize: 11,
+                fontWeight: 800,
+                padding: "0 2px",
+              }}
+            >
               Attribute
             </div>
-            {sports.map((sport) => (
+            {SPORTS.map((sport) => (
               <div
                 key={sport}
-                style={{ color: "#9ca3af", fontSize: 11, fontWeight: 800, textTransform: "capitalize", padding: "0 2px" }}
+                style={{
+                  color: "#9ca3af",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  textTransform: "capitalize",
+                  padding: "0 2px",
+                }}
               >
                 {sport}
               </div>
@@ -443,18 +487,20 @@ export default function Step3_WeightReview({
               >
                 {row.label}
               </div>,
-              ...sports.map((sport) => {
+              ...SPORTS.map((sport) => {
                 const value = row[sport] ?? 0;
                 const magnitude = Math.min(1, Math.abs(value));
-                const background = value >= 0
-                  ? `linear-gradient(135deg, rgba(245,158,11,${0.16 + magnitude * 0.7}), rgba(251,191,36,${0.18 + magnitude * 0.55}))`
-                  : `linear-gradient(135deg, rgba(239,68,68,${0.16 + magnitude * 0.7}), rgba(248,113,113,${0.18 + magnitude * 0.55}))`;
+                const intensity = Math.pow(magnitude, 1.35);
+                const background =
+                  value >= 0
+                    ? `linear-gradient(135deg, rgba(34,197,94,${0.03 + intensity * 0.76}), rgba(74,222,128,${0.04 + intensity * 0.66}))`
+                    : `linear-gradient(135deg, rgba(239,68,68,${0.03 + intensity * 0.76}), rgba(248,113,113,${0.04 + intensity * 0.66}))`;
                 return (
                   <div
                     key={`${row.key}-${sport}`}
                     style={{
                       background,
-                      border: `1px solid ${value >= 0 ? "rgba(245,158,11,0.15)" : "rgba(239,68,68,0.18)"}`,
+                      border: `1px solid ${value >= 0 ? `rgba(34,197,94,${0.06 + intensity * 0.24})` : `rgba(239,68,68,${0.06 + intensity * 0.24})`}`,
                       borderRadius: 12,
                       padding: "10px 12px",
                       minHeight: 44,
@@ -465,8 +511,15 @@ export default function Step3_WeightReview({
                     }}
                     title={`${row.label} - ${sport}: ${value >= 0 ? "+" : ""}${value.toFixed(2)}`}
                   >
-                    <span style={{ color: "#f5f5f5", fontSize: 12, fontWeight: 700 }}>
-                      {value >= 0 ? "+" : ""}{value.toFixed(2)}
+                    <span
+                      style={{
+                        color: "#f5f5f5",
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {value >= 0 ? "+" : ""}
+                      {value.toFixed(2)}
                     </span>
                   </div>
                 );
